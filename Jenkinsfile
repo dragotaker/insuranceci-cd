@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Test') {
             steps {
-                sh '''
+                bat '''
                     python -m pip install --upgrade pip
                     pip install -r requirements.txt
                     pip install pytest pytest-cov pytest-xdist
@@ -21,36 +21,36 @@ pipeline {
         
         stage('Build Docker Image') {
             steps {
-                sh '''
-                    docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                bat '''
+                    docker build -t %DOCKER_IMAGE%:%DOCKER_TAG% .
                 '''
             }
         }
         
         stage('Deploy to Minikube') {
             steps {
-                sh '''
-                    # Убедимся, что minikube запущен
+                bat '''
+                    REM Убедимся, что minikube запущен
                     minikube status || minikube start
                     
-                    # Настроим Docker для работы с minikube
-                    eval $(minikube docker-env)
+                    REM Настроим Docker для работы с minikube
+                    @FOR /f "tokens=*" %%i IN ('minikube docker-env') DO @%%i
                     
-                    # Пересоберем образ внутри minikube
-                    docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                    REM Пересоберем образ внутри minikube
+                    docker build -t %DOCKER_IMAGE%:%DOCKER_TAG% .
                     
-                    # Создадим namespace если его нет
-                    kubectl create namespace ${KUBE_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+                    REM Создадим namespace если его нет
+                    kubectl create namespace %KUBE_NAMESPACE% --dry-run=client -o yaml | kubectl apply -f -
                     
-                    # Применим конфигурацию Kubernetes
+                    REM Применим конфигурацию Kubernetes
                     kubectl apply -f k8s/
                     
-                    # Обновим deployment с новым образом
-                    kubectl set image deployment/insurance-app insurance-app=${DOCKER_IMAGE}:${DOCKER_TAG} -n ${KUBE_NAMESPACE} || \
-                    kubectl create deployment insurance-app --image=${DOCKER_IMAGE}:${DOCKER_TAG} -n ${KUBE_NAMESPACE}
+                    REM Обновим deployment с новым образом
+                    kubectl set image deployment/insurance-app insurance-app=%DOCKER_IMAGE%:%DOCKER_TAG% -n %KUBE_NAMESPACE% || ^
+                    kubectl create deployment insurance-app --image=%DOCKER_IMAGE%:%DOCKER_TAG% -n %KUBE_NAMESPACE%
                     
-                    # Дождемся завершения rollout
-                    kubectl rollout status deployment/insurance-app -n ${KUBE_NAMESPACE}
+                    REM Дождемся завершения rollout
+                    kubectl rollout status deployment/insurance-app -n %KUBE_NAMESPACE%
                 '''
             }
         }
@@ -58,9 +58,9 @@ pipeline {
     
     post {
         always {
-            sh '''
-                # Очистка
-                docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true
+            bat '''
+                REM Очистка
+                docker rmi %DOCKER_IMAGE%:%DOCKER_TAG% || exit 0
             '''
         }
         success {
