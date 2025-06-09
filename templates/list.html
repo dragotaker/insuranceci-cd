@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{table_info.name}}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>{{table_info.name}}</h1>
+        <a href="/add/{{table_name}}" class="button">Добавить запись</a>
+        
+        <table>
+            <thead>
+                <tr>
+                    % for field in table_info['fields']:
+                    <th>{{table_info['display_fields'][field]}}</th>
+                    % end
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                % for row in rows:
+                <tr>
+                    % for field in table_info['fields']:
+                    <td>
+                        % if 'display_values' in table_info and field in table_info['display_values']:
+                            {{table_info['display_values'][field].get(row[field], row[field])}}
+                        % else:
+                            {{row[field]}}
+                        % end
+                    </td>
+                    % end
+                    <td>
+                        <a href="/edit/{{table_name}}/{{row[table_info['fields'][0]]}}" class="button">Изменить</a>
+                        <a href="/delete/{{table_name}}/{{row[table_info['fields'][0]]}}" class="button" onclick="return confirm('Вы уверены, что хотите удалить эту запись?')">Удалить</a>
+                    </td>
+                </tr>
+                % end
+            </tbody>
+        </table>
+    </div>
+</body>
+</html> 
